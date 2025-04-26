@@ -29,6 +29,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.google.accompanist.systemuicontroller.SystemUiController
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.hooman.eyeball.ui.theme.EyeballTheme
@@ -81,6 +83,12 @@ class MainActivity : ComponentActivity() {
             systemUiController.isStatusBarVisible = false // Status bar
             systemUiController.isNavigationBarVisible = false // Navigation bar
             systemUiController.isSystemBarsVisible = false // Status & Navigation bars
+
+            // Don't show system bars on touch, only swipe.
+            WindowInsetsControllerCompat(window, window.decorView).apply {
+                hide(WindowInsetsCompat.Type.statusBars())
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
 
             EyeballTheme {
 
