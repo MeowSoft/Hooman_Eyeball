@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -76,6 +77,9 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         enableEdgeToEdge()
 
+        // Screen dimensions.
+        val screenDims = getScreenDims(this)
+
         setContent {
 
             val systemUiController: SystemUiController = rememberSystemUiController()
@@ -90,6 +94,8 @@ class MainActivity : ComponentActivity() {
                 systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
 
+            var smallestDelay = -1L
+
             EyeballTheme {
 
                 Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.White) { innerPadding ->
@@ -97,27 +103,37 @@ class MainActivity : ComponentActivity() {
                     // Eye position and angle.
                     val position = remember { mutableStateOf(Dims(0, 0, 0)) }
 
-                    // Screen dimensions.
-                    val screenDims = getScreenDims(this)
-
                     AnimatedEye(
                         modifier = Modifier.padding(innerPadding),
                         newPos = position.value
                     )  {
 
+                        // Get new  random screen position.
+                        val w = ((screenDims.x / 2) * 0.9).toInt()
+                        val h = ((screenDims.y / 2) * 0.9).toInt()
+                        val newDims = Dims(
+                            (-w..w).random(),
+                            (-h..h).random(),
+                            (-60..60).random()
+                        )
+
                         // After some random time between 0 and 10 seconds...
-                        Handler(Looper.getMainLooper()).postDelayed({
+                        val delay = (1..5000L).random()
 
-                            val w = ((screenDims.x / 2) * 0.9).toInt()
-                            val h = ((screenDims.y / 2) * 0.9).toInt()
+                        Log.d("HOOMAN", "NewDims: $newDims delay: $delay smallest delay so far: $smallestDelay")
 
-                            // Update position with new x, y, and angle.
-                            position.value = Dims(
-                                (-w..w).random(),
-                                (-h..h).random(),
-                                (-60..60).random()
-                            )
-                        }, (0..5000L).random())
+                        if (smallestDelay < 0 || delay < smallestDelay) {
+                            smallestDelay = delay
+                        }
+
+                        // Update the position value.
+                        do {
+                            val success = Handler(Looper.getMainLooper()).postDelayed({
+                                position.value = newDims
+                            }, delay)
+
+                            Log.d("HOOMAN", "Post success: $success")
+                        } while (!success)
                     }
                 }
             }
@@ -132,14 +148,11 @@ fun AnimatedEye(
     onAnimationComplete: () -> Unit
 ) {
     // Animation values:
-    val x = remember { mutableStateOf(10f) }
-    val y = remember { mutableStateOf(20f) }
-    val a = remember { mutableStateOf(30f) }
-    val time = remember { mutableStateOf(500) }
+    val time = (20..500).random()
 
     // Animate x and y offset.
     val offsetX: Float by animateFloatAsState(
-        targetValue = x.value,
+        targetValue = newPos.x.toFloat(),
         animationSpec = tween(
             durationMillis = time.value,
             easing = LinearEasing
@@ -149,7 +162,7 @@ fun AnimatedEye(
         }
     )
     val offsetY: Float by animateFloatAsState(
-        targetValue = y.value,
+        targetValue = newPos.y.toFloat(),
         animationSpec = tween(
             durationMillis = time.value,
             easing = LinearEasing
@@ -158,7 +171,7 @@ fun AnimatedEye(
 
     // Animate angle.
     val angle: Float by animateFloatAsState(
-        targetValue = a.value,
+        targetValue = newPos.angle.toFloat(),
         animationSpec = tween(
             durationMillis = time.value,
             easing = LinearEasing
@@ -167,9 +180,6 @@ fun AnimatedEye(
 
     // Update animation values.
     LaunchedEffect(newPos) {
-        x.value = newPos.x.toFloat()
-        y.value = newPos.y.toFloat()
-        a.value = (a.value + newPos.angle.toFloat()).mod(360f)
         time.value = (20..500).random()
     }
 
