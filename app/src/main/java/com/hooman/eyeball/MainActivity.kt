@@ -105,19 +105,27 @@ class MainActivity : ComponentActivity() {
                         newPos = position.value
                     )  {
 
-                        // After some random time between 0 and 10 seconds...
-                        Handler(Looper.getMainLooper()).postDelayed({
+                        // Get new position value.
+                        val w = ((screenDims.x / 2) * 0.9).toInt()
+                        val h = ((screenDims.y / 2) * 0.9).toInt()
 
-                            val w = ((screenDims.x / 2) * 0.9).toInt()
-                            val h = ((screenDims.y / 2) * 0.9).toInt()
+                        val newPos = Dims(
+                            (-w..w).random(),
+                            (-h..h).random(),
+                            (-60..60).random()
+                        )
 
-                            // Update position with new x, y, and angle.
-                            position.value = Dims(
-                                (-w..w).random(),
-                                (-h..h).random(),
-                                (-60..60).random()
-                            )
-                        }, (0..5000L).random())
+                        do {
+
+                            // After some random time between 0 and 10 seconds...
+                            val success = Handler(Looper.getMainLooper()).postDelayed({
+
+                                // Update position with new x, y, and angle.
+                                position.value = newPos
+
+                            }, (0..5000L).random())
+
+                        } while (!success)
                     }
                 }
             }
@@ -167,7 +175,15 @@ fun AnimatedEye(
 
     // Update animation values.
     LaunchedEffect(newPos) {
-        x.value = newPos.x.toFloat()
+
+        // If the x value does not change, the
+        // onAnimationComplete callback won't fire
+        // and the animation will stop.
+        if (x.value == newPos.x.toFloat()) {
+            x.value = x.value + 1
+        } else {
+            x.value = newPos.x.toFloat()
+        }
         y.value = newPos.y.toFloat()
         a.value = (a.value + newPos.angle.toFloat()).mod(360f)
         time.value = (20..500).random()
